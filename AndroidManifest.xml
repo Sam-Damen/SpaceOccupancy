@@ -19,12 +19,15 @@
          android:name="android.permission.INTERNET" />
     <uses-permission
         android:name="android.permission.ACCESS_NETWORK_STATE" />
-
+    <uses-permission
+         android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    
+    
     <application
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
-        android:theme="@style/AppTheme" >
+        android:theme="@style/AppTheme" >        
         <activity
             android:name="com.example.bleproximity.MainActivity"
             android:label="@string/app_name" >
@@ -34,6 +37,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <service android:name="com.example.bleproximity.MQTTService" />
     </application>
 
 </manifest>

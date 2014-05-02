@@ -1,10 +1,12 @@
 package com.example.bleproximity;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.net.Socket;
 import java.util.HashMap;
+
+import org.eclipse.paho.client.mqttv3.MqttClient;
+import org.eclipse.paho.client.mqttv3.MqttException;
+import org.eclipse.paho.client.mqttv3.MqttMessage;
+import org.eclipse.paho.client.mqttv3.MqttTopic;
+import org.eclipse.paho.client.mqttv3.internal.MemoryPersistence;
 
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
@@ -26,22 +28,28 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 public class MainActivity extends Activity implements BluetoothAdapter.LeScanCallback {
 	
-	//BLE variables
+	//For debugging
 	protected static final String TAG = "BeaconActivity";
+	//BLE variables
 	private BluetoothAdapter mBLEAdapter;
 	private HashMap<String, BLEBeacon> mBeacons;
 	private BeaconListAdapter mAdapter;
 	
-	//Network Variables
-	private static final int PORT = 1883;
-	private static final String SERVER_ADDR = "192.168.0.8";
+	//MQTT Variables
+	private byte[] beaconMqttData;
+	private Button button;
+    private MqttClient mqttClient;
+
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -57,8 +65,10 @@ public class MainActivity extends Activity implements BluetoothAdapter.LeScanCal
 		//Custom adapter to show beacon attributes
 		mAdapter = new BeaconListAdapter(this);
 		list.setAdapter(mAdapter);
+		list.setOnItemClickListener(beaconClickedHandler);
 		setContentView(list);
-		
+	
+	
 		/*
 		 * Get the Bluetooth Adapter
 		 */
@@ -68,7 +78,29 @@ public class MainActivity extends Activity implements BluetoothAdapter.LeScanCal
 		//Organises found Beacons by their address, only allow 1 instance of each beacon found
 		mBeacons = new HashMap<String, BLEBeacon>();
 		
+		/*
+		 * Check Network Connectivity
+		 */
+		ConnectivityManager connMgr = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+		NetworkInfo info = connMgr.getActiveNetworkInfo();
+		
+		if(info != null && info.isConnected()) {
+			//Start MQTT Service
+			
+		} else {
+			Toast.makeText(this, "No Network Connection", Toast.LENGTH_SHORT).show();
+			finish();
+			return;
+		}		
 	}
+	
+	
+	private void startMQTTService() {
+		
+		final Intent intent = new Intent(this, MQTTService.class);
+		startService(intent);
+	}
+	
 	
 	@Override
 	protected void onResume() {
@@ -88,6 +120,7 @@ public class MainActivity extends Activity implements BluetoothAdapter.LeScanCal
 		 */
 		if (! getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
 			//Make a toast to tell no BLE support
+			Toast.makeText(this, "No BLE Support", Toast.LENGTH_SHORT).show();
 			finish();
 			return;
 		}
@@ -149,8 +182,11 @@ public class MainActivity extends Activity implements BluetoothAdapter.LeScanCal
 		BLEBeacon beacon = new BLEBeacon(device.getAddress(), rssi);		
 		mHandler.sendMessage(Message.obtain(null, 0, beacon));
 		
-		//scanRecord holds raw data if needed
+		//scanRecord holds the raw beacon data
+		beaconMqttData = scanRecord;
+		
 	}
+	
 	
 	
 	/*
@@ -171,68 +207,59 @@ public class MainActivity extends Activity implements BluetoothAdapter.LeScanCal
 		}
 	};
 	
+
+	
+	
 	/*
-	 * Create a new thread with network connection on button press
+	 * Handle Clicks of the List of Beacons
 	 */
-	public void onCLick(View view) {
-		
-		//Check network availablity
-		ConnectivityManager conMgr = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-		NetworkInfo networkInfo = conMgr.getActiveNetworkInfo();
-		if(networkInfo != null && networkInfo.isConnected()) {
-			new MQTTConnectTask().execute();
-		} else {
-			//Display Message to turn on network
-			Toast.makeText(this, "No Network Connection", Toast.LENGTH_SHORT).show();
+	private OnItemClickListener beaconClickedHandler = new OnItemClickListener() {
+		@Override
+		public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+			Log.i(TAG, "List Data: "+ parent.getItemAtPosition(position));
+			
+
 		}
-	}
+	};
 	
 	
 	/*
-	 * Async Task to create a new thread to perform network operations
+	 * Private thread to perform Network Operations
 	 */
-	private class MQTTConnectTask extends AsyncTask<HashMap<String, BLEBeacon>, Void, String> {
+	
+	private class MQTTClass extends AsyncTask<String, Void, String> {
 		
 		@Override
-		protected String doInBackground(HashMap<String, BLEBeacon>... data) {
+		protected String doInBackground(String... data) {
 			
-			try {
-				 return SendMessage(data);
-			} catch (IOException e) {
-				return "Unable to Communicate with MQTT Server.";
-			}			
+	        try {
+	            mqttClient = new MqttClient("tcp://test.mosquitto.org:1883", "androidPhone1", new MemoryPersistence());
+
+	            //mqttClient.setCallback(new PushCallback(this));
+	            mqttClient.connect();
+	            
+	            //mqttClient.setCallback(new BeaconCallBack(this));
+	            MqttTopic topic = mqttClient.getTopic("/bletest/raw");
+	            MqttMessage message = new MqttMessage("hahaha".getBytes());	            
+	            topic.publish(message);
+
+	            //Subscribe to all subtopics of homeautomation
+	            //mqttClient.subscribe("bletest/raw");
+	            
+	            
+	            return "test";
+
+
+	        } catch (MqttException e) {
+	        	return "not good";
+	        }
+			
 		}
-		
-		//Display Results of PubSub
-		@Override
-		protected void onPostExecute(String result) {
-			//Display here
-		}
-		
 	}
+
+		
 	
-	/*
-	 * Thread to Send/ Recieve MQTT messages
-	 */
-	private String SendMessage(HashMap<String, BLEBeacon> info) throws IOException {
-		
-		try {
-			//Open Socket to MQTT Server which handles the connection
-			Socket socket = new Socket(SERVER_ADDR, PORT);
-			ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
-			ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
-			
-			
-			
-			socket.close();
-			return in.readUTF();
-			
-		} catch (IOException e) {
-			e.printStackTrace();
-			return "Error";
-		}
-		
-	}
+	
 	
 	
 	/*
@@ -278,14 +305,32 @@ public class MainActivity extends Activity implements BluetoothAdapter.LeScanCal
 		// Handle action bar item clicks here. The action bar will
 		// automatically handle clicks on the Home/Up button, so long
 		// as you specify a parent activity in AndroidManifest.xml.
-		int id = item.getItemId();
-		if (id == R.id.action_settings) {
-			return true;
-		}
-		return super.onOptionsItemSelected(item);
-	}
-	
-	
 
+		
+		switch (item.getItemId()) {
+		
+		case R.id.action_settings:
+
+			return true;
+			
+		case R.id.clear_beacons:
+			
+			
+			new MQTTClass().execute("message");
+			
+			//Clear the entire HashMap of beacon data
+			mBeacons.clear();
+			//Update the view
+			mAdapter.clear();
+			mAdapter.addAll(mBeacons.values());
+			mAdapter.notifyDataSetChanged();
+
+			return true;
+			
+		default:
+			return super.onOptionsItemSelected(item);
+		
+		}		
+	}
 
 }

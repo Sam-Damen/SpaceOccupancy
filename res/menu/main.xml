@@ -3,6 +3,11 @@
     tools:context="com.example.bleproximity.MainActivity" >
 
     <item
+        android:id="@+id/clear_beacons"
+        android:title="@string/clear_beacons"
+        android:showAsAction="ifRoom" />
+    
+    <item
         android:id="@+id/action_settings"
         android:orderInCategory="100"
         android:showAsAction="never"

@@ -12,5 +12,14 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/hello_world" />
+    
+    <Button 
+        android:id="@+id/button1"
+        android:layout_width = "wrap_content"
+        android:layout_height= "wrap_content"
+        android:layout_alignParentTop="True"
+        android:layout_centerHorizontal= "True"
+        android:layout_marginTop= "162dp"
+        android:text="@string/pub_data"/>
 
 </RelativeLayout>

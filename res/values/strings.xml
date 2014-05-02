@@ -4,5 +4,7 @@
     <string name="app_name">BLEProximity</string>
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
-
+	<string name="clear_beacons">Clear All</string>
+	<string name="pub_data">Publish Beacon Data</string>
+    
 </resources>
