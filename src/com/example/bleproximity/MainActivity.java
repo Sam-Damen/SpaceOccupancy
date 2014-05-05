@@ -21,6 +21,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.provider.Settings.Secure;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -31,7 +32,6 @@ import android.view.Window;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -40,15 +40,21 @@ public class MainActivity extends Activity implements BluetoothAdapter.LeScanCal
 	
 	//For debugging
 	protected static final String TAG = "BeaconActivity";
+	
+	
 	//BLE variables
 	private BluetoothAdapter mBLEAdapter;
 	private HashMap<String, BLEBeacon> mBeacons;
 	private BeaconListAdapter mAdapter;
 	
 	//MQTT Variables
-	private byte[] beaconMqttData;
-	private Button button;
     private MqttClient mqttClient;
+    private String mDeviceID;
+    
+    private static final String MQTT_HOST = "tcp://test.mosquitto.org:1883";
+    //private static final String MQTT_HOST = "tcp://broker.mqttdashboard.com:8000";
+    private static final String DEVICE_ID_FORMAT = "andr_%s";
+    private static final String MQTT_TOPIC = "uq/beaconTracker/raw";
 
 	
 	@Override
@@ -85,20 +91,18 @@ public class MainActivity extends Activity implements BluetoothAdapter.LeScanCal
 		NetworkInfo info = connMgr.getActiveNetworkInfo();
 		
 		if(info != null && info.isConnected()) {
-			//Start MQTT Service
+			//Get Device ID for MQTT client ID
+			
+			mDeviceID = String.format(DEVICE_ID_FORMAT, 
+					Secure.getString(getContentResolver(), Secure.ANDROID_ID));
 			
 		} else {
 			Toast.makeText(this, "No Network Connection", Toast.LENGTH_SHORT).show();
 			finish();
 			return;
-		}		
-	}
-	
-	
-	private void startMQTTService() {
+		}
 		
-		final Intent intent = new Intent(this, MQTTService.class);
-		startService(intent);
+
 	}
 	
 	
@@ -183,8 +187,19 @@ public class MainActivity extends Activity implements BluetoothAdapter.LeScanCal
 		mHandler.sendMessage(Message.obtain(null, 0, beacon));
 		
 		//scanRecord holds the raw beacon data
-		beaconMqttData = scanRecord;
+		new MQTTClass().execute(bytesToHex(scanRecord));
 		
+	}
+	
+	/*
+	 * Helper to parse out ble data
+	 */
+	private static String bytesToHex(byte[] data) {
+		StringBuilder sb = new StringBuilder();
+		for (byte b: data) {
+			sb.append(String.format("%02X ", b));
+		}
+		return sb.toString();
 	}
 	
 	
@@ -227,39 +242,33 @@ public class MainActivity extends Activity implements BluetoothAdapter.LeScanCal
 	 * Private thread to perform Network Operations
 	 */
 	
-	private class MQTTClass extends AsyncTask<String, Void, String> {
+	private class MQTTClass extends AsyncTask<String, Void, Void> {
 		
 		@Override
-		protected String doInBackground(String... data) {
+		protected Void doInBackground(String... data) {
+			
+			String message;
+			message = mDeviceID + "-" + data[0];
 			
 	        try {
-	            mqttClient = new MqttClient("tcp://test.mosquitto.org:1883", "androidPhone1", new MemoryPersistence());
+	            mqttClient = new MqttClient(MQTT_HOST, mDeviceID, new MemoryPersistence());
 
-	            //mqttClient.setCallback(new PushCallback(this));
 	            mqttClient.connect();
 	            
-	            //mqttClient.setCallback(new BeaconCallBack(this));
-	            MqttTopic topic = mqttClient.getTopic("/bletest/raw");
-	            MqttMessage message = new MqttMessage("hahaha".getBytes());	            
-	            topic.publish(message);
-
-	            //Subscribe to all subtopics of homeautomation
-	            //mqttClient.subscribe("bletest/raw");
 	            
+	            //Publish Raw BLE Data + Phone ID to MQTT Broker
+	            MqttTopic topic = mqttClient.getTopic(MQTT_TOPIC);
+	            MqttMessage mqttMessage = new MqttMessage(message.getBytes());
+	            topic.publish(mqttMessage);
 	            
-	            return "test";
-
+	            return null;
 
 	        } catch (MqttException e) {
-	        	return "not good";
-	        }
-			
+	        	e.printStackTrace();
+	        	return null;
+	        }			
 		}
-	}
-
-		
-	
-	
+	}	
 	
 	
 	/*
@@ -315,8 +324,6 @@ public class MainActivity extends Activity implements BluetoothAdapter.LeScanCal
 			
 		case R.id.clear_beacons:
 			
-			
-			new MQTTClass().execute("message");
 			
 			//Clear the entire HashMap of beacon data
 			mBeacons.clear();
