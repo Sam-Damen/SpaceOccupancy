@@ -1,5 +1,7 @@
 package com.example.bleproximity;
 
+import java.util.Locale;
+
 
 /*
  * Simple type to define beacon address and rssi
@@ -22,9 +24,11 @@ class BLEBeacon {
 		return mAddress;
 	}
 	
+
+	
 	@Override
 	public String toString() {
-		return String.format( "%s %ddBm", mAddress, mSignal);
+		return String.format("%s %ddBm", mAddress, mSignal);
 		
 	}
 	
