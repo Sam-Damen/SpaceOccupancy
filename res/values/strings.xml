@@ -8,6 +8,5 @@
 	<string name="action_autoScan">Auto Scan</string>
 	<string name="publish">Publish</string>
 	<string name="scan">Scan</string>
-	<string name="view">Beacon Details</string>
     
 </resources>

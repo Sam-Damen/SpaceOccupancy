@@ -12,24 +12,20 @@
        android:layout_height="0dip"
        android:layout_weight="1.0" /> 
 
-    <Button 
- 	   android:id="@+id/button_viewBeacons"
-       android:layout_width="match_parent"
-       android:layout_height="wrap_content"
-       android:layout_gravity="fill_horizontal"
-       android:text="@string/view"/>
     
    <Button
        android:id="@+id/button_scan"
        android:layout_width="match_parent"
        android:layout_height="wrap_content"
        android:layout_gravity="fill_horizontal"
-       android:text="@string/scan" />
+       android:text="@string/scan"
+       android:onClick="manualScan" />
     
    <Button
        android:id="@+id/button_publish"
        android:layout_width="match_parent"
        android:layout_height="wrap_content"
-       android:text="@string/publish" />
+       android:text="@string/publish"
+       android:onClick="publishData" />
 
 </LinearLayout>

@@ -23,15 +23,12 @@ import android.os.Handler;
 import android.os.Message;
 import android.provider.Settings.Secure;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.Window;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 public class MainActivity extends Activity implements BluetoothAdapter.LeScanCallback {
@@ -43,13 +40,14 @@ public class MainActivity extends Activity implements BluetoothAdapter.LeScanCal
 	//BLE variables
 	private BluetoothAdapter mBLEAdapter;
 	private HashMap<String, BLEBeacon> mBeacons;
-	private BeaconListAdapter mAdapter;
+	private ArrayAdapter<String> mAdapter;
 	private int autoScan = 1;
 	
 	//MQTT Variables
     private MqttClient mqttClient;
     private String mDeviceID;
     private byte[] beaconData;
+    private int beaconRssi;
     
     private static final String MQTT_HOST = "tcp://test.mosquitto.org:1883";
     //private static final String MQTT_HOST = "tcp://broker.mqttdashboard.com:8000";
@@ -63,20 +61,21 @@ public class MainActivity extends Activity implements BluetoothAdapter.LeScanCal
 		//Use a cyclic progress to show scan is happening
 		requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
 		setProgressBarIndeterminate(true);
+		setContentView(R.layout.activity_layout);
 		
-		//Organises found Beacons by their address, only allow 1 instance of each beacon found
+		
+		//Keep Track of found Beacons by their address, only allow 1 instance of each beacon found
 		mBeacons = new HashMap<String, BLEBeacon>();
+		
 		
 		/*
 		 * Display beacons in list
 		 */		
-		ListView list = new ListView(this);
-		//Custom adapter to show beacon attributes
-		mAdapter = new BeaconListAdapter(this);
+		ListView list = (ListView) findViewById(R.id.listview);
+		mAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1);
 		list.setAdapter(mAdapter);
-		
-		setContentView(list);
-		
+
+	
 		/*
 		 * Get the Bluetooth Adapter
 		 */
@@ -161,6 +160,7 @@ public class MainActivity extends Activity implements BluetoothAdapter.LeScanCal
 	private void stopScan() {
 		mBLEAdapter.stopLeScan(this);
 		setProgressBarIndeterminateVisibility(false);
+		
 		if(autoScan == 1) {
 			//Turn off scan for 5 sec
 			mHandler.postDelayed(mStartRun, 5000);
@@ -168,10 +168,10 @@ public class MainActivity extends Activity implements BluetoothAdapter.LeScanCal
 	}
 	
 	private void startScan() {
-		//Scan for all periherals (can use UUID [] to only find certain)
-		mBLEAdapter.startLeScan(this);
-		setProgressBarIndeterminateVisibility(true);
+		//Start a Scan for LE devices
 		if(autoScan == 1) {
+			mBLEAdapter.startLeScan(this);
+			setProgressBarIndeterminateVisibility(true);
 			//Turn on scan for 5 sec
 			mHandler.postDelayed(mStopRun, 5000);
 		}
@@ -187,16 +187,12 @@ public class MainActivity extends Activity implements BluetoothAdapter.LeScanCal
 		Log.i(TAG, "New BLE Device: " + device.getName() + " @ " + rssi);
 		
 		//Create a new beacon and then pass it to handler to update map
-		BLEBeacon beacon = new BLEBeacon(device.getAddress(), rssi);		
+		BLEBeacon beacon = new BLEBeacon(device.getAddress(),device.getName(), rssi);		
 		mHandler.sendMessage(Message.obtain(null, 0, beacon));
 		
-		//Pass beaconData to button
+		//Store ScanRecord Data for publishing
 		beaconData = scanRecord;
-		
-		//scanRecord holds the raw beacon data
-		new MQTTClass().execute(bytesToHex(scanRecord));
-		
-		
+		beaconRssi = rssi;
 	}
 	
 	/*
@@ -216,15 +212,19 @@ public class MainActivity extends Activity implements BluetoothAdapter.LeScanCal
 	 * Handler to pass scan results to main to update list view
 	 */
 	private Handler mHandler = new Handler() {
+		
+		private String sBeacon;
+		
 		@Override
 		public void handleMessage(Message msg) {
 			BLEBeacon beacon = (BLEBeacon) msg.obj;
 			mBeacons.put(beacon.getAddress(), beacon);
 			
-			//Clear then put new information into mAdapter list to display
+			sBeacon = (mBeacons.get(beacon.getAddress()).toString());
+			
 			mAdapter.setNotifyOnChange(false);
 			mAdapter.clear();
-			mAdapter.addAll(mBeacons.values());
+			mAdapter.add(sBeacon);
 			mAdapter.notifyDataSetChanged();
 			
 		}
@@ -243,7 +243,7 @@ public class MainActivity extends Activity implements BluetoothAdapter.LeScanCal
 		protected Void doInBackground(String... data) {
 			
 			String message;
-			message = mDeviceID + "-" + data[0];
+			message = mDeviceID + Integer.toString(beaconRssi) + ":" + data[0];
 			
 	        try {
 	            mqttClient = new MqttClient(MQTT_HOST, mDeviceID, new MemoryPersistence());
@@ -263,38 +263,31 @@ public class MainActivity extends Activity implements BluetoothAdapter.LeScanCal
 	        	return null;
 	        }			
 		}
-	}	
+	}
 	
 	
 	/*
-	 * Custom List/array adapter to display the found Beacons
+	 * Handle Button Presses
 	 */
-	private static class BeaconListAdapter extends ArrayAdapter<BLEBeacon> {
+	public void manualScan(View view) {
 		
-		public BeaconListAdapter(Context context) {
-			super(context, 0);
-		}
-		
-		@Override
-		public View getView(int position, View convertView, ViewGroup parent) {
-			if(convertView == null) {
-				convertView = LayoutInflater.from(getContext())
-						.inflate(R.layout.item_beacon_list, parent, false);
-			}
-			
-			BLEBeacon beacon = getItem(position);
-			
-			TextView numView = (TextView) convertView.findViewById(R.id.text_num);
-			numView.setText(Integer.toString(position+ 1));
-			
-			TextView addressView = (TextView) convertView.findViewById(R.id.text_address);
-			addressView.setText(beacon.getAddress());
-			
-			TextView rssiView = (TextView) convertView.findViewById(R.id.text_rssi);
-			rssiView.setText(String.format("%ddBm", beacon.getSignal()));
-			
-			return convertView;			
+		if (autoScan == 1) {
+			//First turn off autoscanning
+			Toast.makeText(this, "Auto Scan OFF", Toast.LENGTH_SHORT).show();
+			autoScan = 0;
+			setProgressBarIndeterminateVisibility(false);
 		}		
+		
+		mBLEAdapter.startLeScan(this);
+		setProgressBarIndeterminateVisibility(true);
+		//Turn on scan for 5 sec
+		mHandler.postDelayed(mStopRun, 5000);			
+	}
+	
+	public void publishData(View view) {
+		
+		//Send the data to the MQTT task
+		new MQTTClass().execute(bytesToHex(beaconData));
 		
 	}
 	
@@ -323,7 +316,6 @@ public class MainActivity extends Activity implements BluetoothAdapter.LeScanCal
 			mBeacons.clear();
 			//Update the view
 			mAdapter.clear();
-			mAdapter.addAll(mBeacons.values());
 			mAdapter.notifyDataSetChanged();
 
 			return true;
