@@ -13,11 +13,13 @@ class BLEBeacon {
 	private int mSignal;
 	private String mAddress;
 	private String mName;
+	private byte[] mData;
 	
-	public BLEBeacon(String deviceAddr, String name,  int rssi) {
+	public BLEBeacon(String deviceAddr, String name,  int rssi, byte[] data) {
 		mSignal = rssi;
 		mAddress = deviceAddr;		
 		mName = name;
+		mData = data;
 	}
 	
 	public int getSignal() {
@@ -30,6 +32,10 @@ class BLEBeacon {
 	
 	public String getName() {
 		return mName;
+	}
+	
+	public byte[] getData() {
+		return mData;
 	}
 	
 

@@ -46,12 +46,13 @@ public class MainActivity extends Activity implements BluetoothAdapter.LeScanCal
 	//MQTT Variables
     private MqttClient mqttClient;
     private String mDeviceID;
-    private byte[] beaconData;
+    
     private int beaconRssi;
     
-    private static final String MQTT_HOST = "tcp://test.mosquitto.org:1883";
-    //private static final String MQTT_HOST = "tcp://broker.mqttdashboard.com:8000";
-    //private static final String MQTT_HOST = "tcp://q.m2m.io:8083";
+    //private static final String MQTT_HOST = "tcp://test.mosquitto.org:1883";
+    //private static final String MQTT_HOST = "tcp://autum.ceit.uq.edu.au:1883";
+    private static final String MQTT_HOST = "tcp://winter.ceit.uq.edu.au:1883";
+    
     private static final String DEVICE_ID_FORMAT = "ID_%s";
     private static final String MQTT_TOPIC = "uq/beaconTracker/raw";
 	
@@ -181,28 +182,59 @@ public class MainActivity extends Activity implements BluetoothAdapter.LeScanCal
 	
 	/*
 	 * LE Scan Callback
+	 * Finds and stores Data for all beacons
 	 */
 	@Override
 	public void onLeScan(BluetoothDevice device, int rssi, byte [] scanRecord) {
 		Log.i(TAG, "New BLE Device: " + device.getName() + " @ " + rssi);
 		
 		//Create a new beacon and then pass it to handler to update map
-		BLEBeacon beacon = new BLEBeacon(device.getAddress(),device.getName(), rssi);		
+		BLEBeacon beacon = new BLEBeacon(device.getAddress(),device.getName(), rssi, scanRecord);		
 		mHandler.sendMessage(Message.obtain(null, 0, beacon));
-		
-		//Store ScanRecord Data for publishing
-		beaconData = scanRecord;
-		beaconRssi = rssi;
 	}
+/*
+		if ( !(device.getAddress().equals(oldAddress)) ) {
+			beaconData2 = scanRecord;
+			beaconRssi = rssi;
+		} else {			
+			//Store ScanRecord Data for publishing
+			beaconData = scanRecord;
+			beaconRssi = rssi;
+		}
+		
+		oldAddress = device.getAddress();
+*/	
+	
+	
 	
 	/*
 	 * Helper to parse out ble data
 	 */
-	private static String bytesToHex(byte[] data) {
+	private static String bytesToHex(byte[] data, int rssi) {
+		
 		StringBuilder sb = new StringBuilder();
-		for (byte b: data) {
-			sb.append(String.format("%02X ", b));
+		//Length of first advertising information
+		int adLength = data[0];
+		//Length of second advertising information
+		int ad2Length;
+		int i;
+		
+		//Find Length of BLE packet
+		for (i = 0; i < adLength + 1; i++) {
+			sb.append(String.format("%02X ", data[i]));
 		}
+		
+		//Get length of rest of packet
+		ad2Length = data[i];
+		
+		//Move one position over, account for the total length and 2 bytes skipped
+		for (i = i + 0; i < ad2Length + adLength + 2; i++) {
+			sb.append(String.format("%02X ", data[i]));
+		}
+		
+		//Append the RSSI also
+		sb.append(String.format("%d", rssi));
+
 		return sb.toString();
 	}
 	
@@ -213,26 +245,28 @@ public class MainActivity extends Activity implements BluetoothAdapter.LeScanCal
 	 */
 	private Handler mHandler = new Handler() {
 		
-		private String sBeacon;
+		//private String sBeacon;
 		
 		@Override
 		public void handleMessage(Message msg) {
 			BLEBeacon beacon = (BLEBeacon) msg.obj;
-			mBeacons.put(beacon.getAddress(), beacon);
 			
-			sBeacon = (mBeacons.get(beacon.getAddress()).toString());
+			//Store Beacon data (keep only 1 copy of each)
+			mBeacons.put(beacon.getAddress(), beacon);
 			
 			mAdapter.setNotifyOnChange(false);
 			mAdapter.clear();
-			mAdapter.add(sBeacon);
-			mAdapter.notifyDataSetChanged();
+						
+			//For all the addresses in the Hashmap
+			for (String addr : mBeacons.keySet()) {
+				mAdapter.add(mBeacons.get(addr).toString());				
+			}
 			
+			mAdapter.notifyDataSetChanged();			
 		}
 	};
 	
 	
-	
-
 	/*
 	 * Private thread to perform Network Operations
 	 */
@@ -287,8 +321,9 @@ public class MainActivity extends Activity implements BluetoothAdapter.LeScanCal
 	public void publishData(View view) {
 		
 		//Send the data to the MQTT task
-		new MQTTClass().execute(bytesToHex(beaconData));
-		
+		for (BLEBeacon beacon : mBeacons.values()) {
+			new MQTTClass().execute(bytesToHex(beacon.getData(), beacon.getSignal()));
+		}
 	}
 	
 	
