@@ -43,6 +43,9 @@ public class MainActivity extends Activity implements BluetoothAdapter.LeScanCal
 	private ArrayAdapter<String> mAdapter;
 	private int autoScan = 1;
 	
+	//private static final UUID IBEAC = UUID.fromString("2F234454-CF6D-4A0F-ADF2-F4911BA9FFA6");
+	//private static final UUID IBEAC = UUID.fromString("004C");
+	
 	//MQTT Variables
     private MqttClient mqttClient;
     private String mDeviceID;
@@ -188,9 +191,11 @@ public class MainActivity extends Activity implements BluetoothAdapter.LeScanCal
 	public void onLeScan(BluetoothDevice device, int rssi, byte [] scanRecord) {
 		Log.i(TAG, "New BLE Device: " + device.getName() + " @ " + rssi);
 		
-		//Create a new beacon and then pass it to handler to update map
-		BLEBeacon beacon = new BLEBeacon(device.getAddress(),device.getName(), rssi, scanRecord);		
-		mHandler.sendMessage(Message.obtain(null, 0, beacon));
+		if (parseUuids(scanRecord)) {
+			//Create a new beacon and then pass it to handler to update map
+			BLEBeacon beacon = new BLEBeacon(device.getAddress(),device.getName(), rssi, scanRecord);		
+			mHandler.sendMessage(Message.obtain(null, 0, beacon));
+		}
 	}
 /*
 		if ( !(device.getAddress().equals(oldAddress)) ) {
@@ -204,6 +209,29 @@ public class MainActivity extends Activity implements BluetoothAdapter.LeScanCal
 		
 		oldAddress = device.getAddress();
 */	
+	
+	
+	/*
+	 * Filter out all BLE devices except iBeacon
+	 */
+	private boolean parseUuids(byte[] scanData) {
+		int startByte = 2;
+		boolean iBeaconFound = false;
+		while (startByte <= 5) {
+			if (((scanData[(startByte + 2)] & 0xFF) == 2) && ((scanData[(startByte + 3)] & 0xFF) == 21)) {
+				iBeaconFound = true;
+				break;
+			}
+			//Add in other beacons that are acceptable, estimote?
+			startByte++;
+		}
+		
+		if (iBeaconFound) {
+			return true;
+		} else {
+			return false;
+		}
+	 }
 	
 	
 	
