@@ -5,7 +5,7 @@
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
 	<string name="action_clearBeacons">Clear All</string>
-	<string name="action_autoScan">Auto Scan</string>
+	<string name="action_autoScan">Auto Mode</string>
 	<string name="publish">Publish</string>
 	<string name="scan">Scan</string>
     

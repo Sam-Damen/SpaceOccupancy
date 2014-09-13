@@ -176,6 +176,10 @@ public class MainActivity extends Activity implements BluetoothAdapter.LeScanCal
 		if(autoScan == 1) {
 			mBLEAdapter.startLeScan(this);
 			setProgressBarIndeterminateVisibility(true);
+			//Auto Publish Data
+			for (BLEBeacon beacon : mBeacons.values()) {
+				new MQTTClass().execute(bytesToHex(beacon.getData(), beacon.getSignal()));
+			}
 			//Turn on scan for 5 sec
 			mHandler.postDelayed(mStopRun, 5000);
 		}
@@ -335,7 +339,7 @@ public class MainActivity extends Activity implements BluetoothAdapter.LeScanCal
 		
 		if (autoScan == 1) {
 			//First turn off autoscanning
-			Toast.makeText(this, "Auto Scan OFF", Toast.LENGTH_SHORT).show();
+			Toast.makeText(this, "Auto Mode OFF", Toast.LENGTH_SHORT).show();
 			autoScan = 0;
 			setProgressBarIndeterminateVisibility(false);
 		}		
@@ -389,10 +393,10 @@ public class MainActivity extends Activity implements BluetoothAdapter.LeScanCal
 			autoScan ^= 1;
 			
 			if (autoScan == 1) {
-				Toast.makeText(this, "Auto Scan ON", Toast.LENGTH_SHORT).show();
+				Toast.makeText(this, "Auto Mode ON", Toast.LENGTH_SHORT).show();
 				startScan();
 			} else {
-				Toast.makeText(this, "Auto Scan OFF", Toast.LENGTH_SHORT).show();
+				Toast.makeText(this, "Auto Mode OFF", Toast.LENGTH_SHORT).show();
 				stopScan();
 			}
 			
