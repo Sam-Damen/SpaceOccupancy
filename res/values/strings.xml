@@ -8,5 +8,12 @@
 	<string name="action_autoScan">Auto Mode</string>
 	<string name="publish">Publish</string>
 	<string name="scan">Scan</string>
+	<string name="spaces">Spaces</string>
+	<string name="users">Users</string>
+	<string name="view">View Beacons</string>
+	<string name="spmng">Space Management</string>
+	<string name="mainimg">Bluetooth Logo</string>
+	<string name="search">Search</string>
+	<string name="searchhint">Enter Users Phone Id</string>
     
 </resources>

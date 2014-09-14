@@ -1,0 +1,17 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="com.example.bleproximity.MainActivity" >
+
+    <item
+        android:id="@+id/clear_beacons"
+        android:title="@string/action_clearBeacons"
+        android:showAsAction="never" />
+    
+    <item
+        android:id="@+id/auto_scan"
+        android:title="@string/action_autoScan"
+        android:showAsAction="never" />    
+
+    
+
+</menu>

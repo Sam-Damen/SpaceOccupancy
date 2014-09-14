@@ -1,0 +1,38 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.example.bleproximity.MainActivity"
+    tools:ignore="MergeRootFrame" >
+
+    <GridLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:columnCount="1" >
+
+        <Button
+            android:id="@+id/button1"
+            android:layout_column="0"
+            android:layout_gravity="right|top"
+            android:layout_row="0"
+            android:text="@string/search" />
+
+        <EditText
+            android:id="@+id/editText1"
+            android:layout_width="243dp"
+            android:layout_column="0"
+            android:layout_gravity="left|top"
+            android:layout_row="0"
+            android:ems="10"
+            android:labelFor="@+id/editText1"
+            android:inputType="text"
+            android:hint="@string/searchhint" >
+
+            <requestFocus />
+        </EditText>
+
+    </GridLayout>
+
+</FrameLayout>
+
