@@ -43,7 +43,6 @@ public class BeaconActivity extends Activity implements BluetoothAdapter.LeScanC
 	//MQTT Variables
     private MqttClient mqttClient;
     private String mDeviceID;    
-    private int beaconRssi;
     private static final String MQTT_HOST = "tcp://winter.ceit.uq.edu.au:1883";    
     private static final String MQTT_TOPIC = "uq/beaconTracker/raw";
 	
@@ -263,7 +262,7 @@ public class BeaconActivity extends Activity implements BluetoothAdapter.LeScanC
 		protected Void doInBackground(String... data) {
 			
 			String message;
-			message = mDeviceID + Integer.toString(beaconRssi) + ":" + data[0];
+			message = mDeviceID  + ":" + data[0];
 			
 	        try {
 	            mqttClient = new MqttClient(MQTT_HOST, mDeviceID, new MemoryPersistence());

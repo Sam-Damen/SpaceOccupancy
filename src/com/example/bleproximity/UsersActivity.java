@@ -26,11 +26,13 @@ public class UsersActivity extends Activity {
     private MqttClient mqttClient;
     private static final String MQTT_HOST = "tcp://winter.ceit.uq.edu.au:1883";    
     private static final String MQTT_TOPIC = "uq/beaconTracker/usrloc";
+    
+    private StatusUpdateReceiver intentReciever;
+    private MQTTMessageReceiver messageReciever;
 	
 	EditText mEdit;
 	private String phoneID;
-	private static final String DEVICE_ID_FORMAT = "ID_%s";
-	
+
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -53,9 +55,9 @@ public class UsersActivity extends Activity {
 				//Get text from input
 				//If null use own phoneID
 				if(  mEdit.getText().toString().matches("") ) {
-					phoneID = String.format(DEVICE_ID_FORMAT, Secure.getString(getContentResolver(), Secure.ANDROID_ID));
+					phoneID = String.format(Secure.getString(getContentResolver(), Secure.ANDROID_ID));
 				} else {
-					phoneID = "ID_" + mEdit.getText().toString();
+					phoneID = mEdit.getText().toString();
 				}
 				//Send MQTT Message
 				new MQTTClass().execute(phoneID);
