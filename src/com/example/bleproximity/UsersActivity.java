@@ -7,6 +7,7 @@ import org.eclipse.paho.client.mqttv3.MqttTopic;
 import org.eclipse.paho.client.mqttv3.internal.MemoryPersistence;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.provider.Settings.Secure;
@@ -27,9 +28,6 @@ public class UsersActivity extends Activity {
     private static final String MQTT_HOST = "tcp://winter.ceit.uq.edu.au:1883";    
     private static final String MQTT_TOPIC = "uq/beaconTracker/usrloc";
     
-    private StatusUpdateReceiver intentReciever;
-    private MQTTMessageReceiver messageReciever;
-	
 	EditText mEdit;
 	private String phoneID;
 
@@ -59,6 +57,8 @@ public class UsersActivity extends Activity {
 				} else {
 					phoneID = mEdit.getText().toString();
 				}
+				//Start MQTT Service to receive messages
+				//startMQTTService();
 				//Send MQTT Message
 				new MQTTClass().execute(phoneID);
 			}
@@ -76,6 +76,15 @@ public class UsersActivity extends Activity {
 	@Override
 	protected void onPause() {
 		super.onPause();
+	}
+	
+	/*
+	 * Caller to start MQTT service
+	 */
+	private void startMQTTService() {
+		
+		final Intent intent = new Intent(this, MQTTService.class);
+		startService(intent);
 	}
 
 	

@@ -14,6 +14,8 @@
 	<string name="spmng">Space Management</string>
 	<string name="mainimg">Bluetooth Logo</string>
 	<string name="search">Search</string>
+	<string name="spacebut">Search</string>
 	<string name="searchhint">Enter Users Phone Id</string>
+    <string name="searchhint2">Enter Space Name</string>
     
 </resources>

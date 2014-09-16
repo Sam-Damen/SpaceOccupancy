@@ -1,15 +1,11 @@
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<GridLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context="com.example.bleproximity.MainActivity"
-    tools:ignore="MergeRootFrame" >
-
-    <GridLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:columnCount="1" >
+    tools:ignore="MergeRootFrame"
+    android:columnCount = "1" >
 
         <Button
             android:id="@+id/button1"
@@ -32,7 +28,7 @@
             <requestFocus />
         </EditText>
 
-    </GridLayout>
+</GridLayout>
 
-</FrameLayout>
+
 
