@@ -1,22 +1,27 @@
 package com.example.bleproximity;
 
+import org.eclipse.paho.client.mqttv3.MqttCallback;
 import org.eclipse.paho.client.mqttv3.MqttClient;
+import org.eclipse.paho.client.mqttv3.MqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.MqttTopic;
 import org.eclipse.paho.client.mqttv3.internal.MemoryPersistence;
 
 import android.app.Activity;
-import android.content.Intent;
+import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Looper;
 import android.provider.Settings.Secure;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Toast;
 
 public class UsersActivity extends Activity {
 	
@@ -58,7 +63,8 @@ public class UsersActivity extends Activity {
 					phoneID = mEdit.getText().toString();
 				}
 				//Start MQTT Service to receive messages
-				//startMQTTService();
+				MQTTSubClass task = new MQTTSubClass(UsersActivity.this);
+				task.execute();
 				//Send MQTT Message
 				new MQTTClass().execute(phoneID);
 			}
@@ -77,17 +83,6 @@ public class UsersActivity extends Activity {
 	protected void onPause() {
 		super.onPause();
 	}
-	
-	/*
-	 * Caller to start MQTT service
-	 */
-	private void startMQTTService() {
-		
-		final Intent intent = new Intent(this, MQTTService.class);
-		startService(intent);
-	}
-
-	
 	
 	/*
 	 * Private thread to perform Network Operations
@@ -119,6 +114,77 @@ public class UsersActivity extends Activity {
 	        	return null;
 	        }			
 		}
+	}
+	
+	/*
+	 * Private Thread to perform network subscribe
+	 */
+	private class MQTTSubClass extends AsyncTask<Void, Void, Void> implements MqttCallback {
+	
+		public String topicName = "uq/beaconTracker/locreq";
+		private Context mContext;
+		private String receivedMsg;
+		
+		public MQTTSubClass(Context context) {
+			this.mContext = context;
+		}
+
+		protected void onPostExecute(Void result) {
+			//Finished performing task
+			
+			//receivedMsg is null	!!!
+			//Figure out how to create a toast or notification while in async task
+			Log.i("mqttRECEIVED", receivedMsg);
+			Toast.makeText(mContext, receivedMsg, Toast.LENGTH_SHORT).show();
+			
+		}
+
+		protected void onPreExecute() {
+		}
+
+		protected void onProgressUpdate(Void... values) {
+		}
+
+		@Override
+		protected Void doInBackground(Void...msg ) {
+			if (Looper.myLooper() == null) {
+				Looper.prepare();
+			}
+			Log.i("mqtt", "SubscribeToTopic loading in asynk task to topic: "
+					+ topicName);
+			
+			try {
+	            mqttClient = new MqttClient(MQTT_HOST, "random", new MemoryPersistence());
+	            
+	            mqttClient.connect();
+	            mqttClient.subscribe(topicName);
+	            mqttClient.setCallback(MQTTSubClass.this);
+	            
+			} catch (MqttException e) {
+				Log.e("mqtt", "subscribe failed - MQTT exception", e);
+			}
+			
+			return null;
+		}
+		@Override
+		public void connectionLost(Throwable arg0) {
+			// reconnect here
+
+		}
+
+		@Override
+		public void deliveryComplete(MqttDeliveryToken arg0) {
+			//No publishing so not needed
+
+		}
+
+		@Override
+		public void messageArrived(MqttTopic arg0, MqttMessage msg)
+				throws Exception {
+			// Generate a toast notification when we receive a message
+			Log.i("MQTT Sub", msg.toString());
+			receivedMsg = msg.toString();			
+		}		
 	}
 	
 	
