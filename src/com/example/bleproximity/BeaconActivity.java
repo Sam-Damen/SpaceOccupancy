@@ -45,6 +45,7 @@ public class BeaconActivity extends Activity implements BluetoothAdapter.LeScanC
     private String mDeviceID;    
     private static final String MQTT_HOST = "tcp://winter.ceit.uq.edu.au:1883";    
     private static final String MQTT_TOPIC = "uq/beaconTracker/raw";
+    private static final String TOPIC_SPACE = "uq/beaconTracker/space";
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -273,6 +274,11 @@ public class BeaconActivity extends Activity implements BluetoothAdapter.LeScanC
 	            //Publish Raw BLE Data + Phone ID to MQTT Broker
 	            MqttTopic topic = mqttClient.getTopic(MQTT_TOPIC);
 	            MqttMessage mqttMessage = new MqttMessage(message.getBytes());
+	            topic.publish(mqttMessage);
+	            
+	            //Also publish for data logging
+	            topic = mqttClient.getTopic(TOPIC_SPACE);
+	            mqttMessage = new MqttMessage("Laptop".getBytes());
 	            topic.publish(mqttMessage);
 	            
 	            return null;

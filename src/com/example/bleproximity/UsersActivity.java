@@ -32,6 +32,8 @@ public class UsersActivity extends Activity {
     private MqttClient mqttClient;
     private static final String MQTT_HOST = "tcp://winter.ceit.uq.edu.au:1883";    
     private static final String MQTT_TOPIC = "uq/beaconTracker/usrloc";
+    private String receivedMsg;
+	private Boolean arrived = false;
     
 	EditText mEdit;
 	private String phoneID;
@@ -123,7 +125,7 @@ public class UsersActivity extends Activity {
 	
 		public String topicName = "uq/beaconTracker/locreq";
 		private Context mContext;
-		private String receivedMsg;
+		private String msg;
 		
 		public MQTTSubClass(Context context) {
 			this.mContext = context;
@@ -131,11 +133,19 @@ public class UsersActivity extends Activity {
 
 		protected void onPostExecute(Void result) {
 			//Finished performing task
-			
-			//receivedMsg is null	!!!
-			//Figure out how to create a toast or notification while in async task
-			Log.i("mqttRECEIVED", receivedMsg);
-			Toast.makeText(mContext, receivedMsg, Toast.LENGTH_SHORT).show();
+			if (arrived) {
+				Log.i("mqttRECEIVED", receivedMsg);
+				//Parse Received Message
+				if (!receivedMsg.matches("")) {
+					if (receivedMsg.startsWith("1")) {
+						msg = "User Currently in Space " + "'" + receivedMsg.substring(2) + "'";
+					} else {
+						msg = "User Last in Space " + "'" + receivedMsg.substring(2) + "'";
+					}
+				}
+				Toast.makeText(mContext, msg, Toast.LENGTH_SHORT).show();
+				arrived = false;
+			}
 			
 		}
 
@@ -183,7 +193,8 @@ public class UsersActivity extends Activity {
 				throws Exception {
 			// Generate a toast notification when we receive a message
 			Log.i("MQTT Sub", msg.toString());
-			receivedMsg = msg.toString();			
+			receivedMsg = msg.toString();
+			arrived = true;
 		}		
 	}
 	

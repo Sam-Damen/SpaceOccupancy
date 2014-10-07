@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">BLEProximity</string>
+    <string name="app_name">BLE Space Management</string>
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
 	<string name="action_clearBeacons">Clear All</string>
 	<string name="action_autoScan">Auto Mode</string>
 	<string name="publish">Publish</string>
 	<string name="scan">Scan</string>
-	<string name="spaces">Spaces</string>
-	<string name="users">Users</string>
+	<string name="spaces">Space Occupancy</string>
+	<string name="users">User\'s Location</string>
 	<string name="view">View Beacons</string>
 	<string name="spmng">Space Management</string>
 	<string name="mainimg">Bluetooth Logo</string>

@@ -1,20 +1,26 @@
 package com.example.bleproximity;
 
+import org.eclipse.paho.client.mqttv3.MqttCallback;
 import org.eclipse.paho.client.mqttv3.MqttClient;
+import org.eclipse.paho.client.mqttv3.MqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.MqttTopic;
 import org.eclipse.paho.client.mqttv3.internal.MemoryPersistence;
 
 import android.app.Activity;
+import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Looper;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Toast;
 
 public class SpaceActivity extends Activity {
 	
@@ -24,7 +30,9 @@ public class SpaceActivity extends Activity {
 	//MQTT Variables
     private MqttClient mqttClient;
     private static final String MQTT_HOST = "tcp://winter.ceit.uq.edu.au:1883";    
-    private static final String MQTT_TOPIC = "uq/beaconTracker/space";	
+    private static final String MQTT_TOPIC = "uq/beaconTracker/space";
+    private Boolean arrived = false;
+    private String receivedMsg;
 	
 	EditText mEdit;
 	private String space;
@@ -56,7 +64,8 @@ public class SpaceActivity extends Activity {
 					space = mEdit.getText().toString();
 				}
 				//Start MQTT Service to receive messages
-				//startMQTTService();
+				MQTTSubClass task = new MQTTSubClass(SpaceActivity.this);
+				task.execute(space);
 				//Send MQTT Message
 				new MQTTClass().execute(space);
 			}
@@ -116,6 +125,83 @@ public class SpaceActivity extends Activity {
 	        }			
 		}
 	}
+	
+	
+	/*
+	 * Private Thread to perform network subscribe
+	 */
+	private class MQTTSubClass extends AsyncTask<String, Void, Void> implements MqttCallback {
+	
+		public String topicName = "uq/beaconTracker/occReq";
+		private Context mContext;
+		private String room = "";
+		
+		public MQTTSubClass(Context context) {
+			this.mContext = context;
+		}
+
+		protected void onPostExecute(Void result) {
+			//Finished performing task
+			if (arrived) {
+				Log.i("mqttRECEIVED", receivedMsg);
+				//Parse Received Message
+				Toast.makeText(mContext, room + " Occupancy is " + receivedMsg, Toast.LENGTH_SHORT).show();
+				arrived = false;
+			}
+		}
+
+		protected void onPreExecute() {
+		}
+
+		protected void onProgressUpdate(Void... result) {
+		}
+
+		@Override
+		protected Void doInBackground(String... data ) {
+			if (Looper.myLooper() == null) {
+				Looper.prepare();
+			}
+			Log.i("mqtt", "SubscribeToTopic loading in asynk task to topic: "
+					+ topicName);
+			
+			try {
+				
+				room = data[0];
+				
+	            mqttClient = new MqttClient(MQTT_HOST, "random", new MemoryPersistence());
+	            
+	            mqttClient.connect();
+	            mqttClient.subscribe(topicName);
+	            mqttClient.setCallback(MQTTSubClass.this);
+	            
+			} catch (MqttException e) {
+				Log.e("mqtt", "subscribe failed - MQTT exception", e);
+			}
+			
+			return null;
+		}
+		@Override
+		public void connectionLost(Throwable arg0) {
+			// reconnect here
+
+		}
+
+		@Override
+		public void deliveryComplete(MqttDeliveryToken arg0) {
+			//No publishing so not needed
+
+		}
+
+		@Override
+		public void messageArrived(MqttTopic arg0, MqttMessage msg)
+				throws Exception {
+			// Generate a toast notification when we receive a message
+			Log.i("MQTT Sub", msg.toString());
+			receivedMsg = msg.toString();
+			arrived = true;
+		}		
+	}	
+	
 	
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {

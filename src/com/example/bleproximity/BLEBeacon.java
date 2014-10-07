@@ -42,7 +42,7 @@ class BLEBeacon {
 	
 	@Override
 	public String toString() {
-		return String.format("%s%ddBm", mAddress, mSignal);
+		return String.format("%s %30s %ddBm", mAddress," ", mSignal);
 		
 	}
 	
