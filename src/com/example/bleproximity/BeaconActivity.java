@@ -276,10 +276,6 @@ public class BeaconActivity extends Activity implements BluetoothAdapter.LeScanC
 	            MqttMessage mqttMessage = new MqttMessage(message.getBytes());
 	            topic.publish(mqttMessage);
 	            
-	            //Also publish for data logging
-	            topic = mqttClient.getTopic(TOPIC_SPACE);
-	            mqttMessage = new MqttMessage("Laptop".getBytes());
-	            topic.publish(mqttMessage);
 	            
 	            return null;
 
